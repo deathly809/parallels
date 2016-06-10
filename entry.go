@@ -1,12 +1,16 @@
 package parallels
 
-import "sync"
+import (
+	rt "runtime"
+	"sync"
+)
 
 // Job which you want to run in parallel
 type Job interface {
 	Name() string
 	Next() bool
 	ID() int
+	SetID(int)
 }
 
 // JobStatus represents the current status of a
@@ -24,12 +28,31 @@ const (
 	Completed  = JobStatus(iota) // Completed successfully
 )
 
+// StatusByName returns a status value by its string representation
+func StatusByName(status JobStatus) string {
+	result := "Invalid Status"
+	switch status {
+	case InvalidJob:
+		result = "InvalidJob"
+	case Enqueued:
+		result = "Enqueued"
+	case Running:
+		result = "Running"
+	case Terminated:
+		result = "Terminated"
+	case Completed:
+		result = "Completed"
+	}
+	return result
+}
+
 // Runtime handles the parallels runtime
 type Runtime interface {
 
-	// StartJob starts a job and returns a unique id
+	// StartJob starts a job and returns a UID
 	// for the job
-	StartJob(theJob Job, async bool) int
+	StartJob(job Job) int
+
 	// StopJob stops the given job
 	StopJob(jobID int) bool
 
@@ -38,6 +61,7 @@ type Runtime interface {
 
 	// Start the parallels runtime
 	Start()
+
 	// Stop the parallels runtime
 	Stop()
 }
@@ -52,7 +76,8 @@ func GetRuntime() Runtime {
 	if globalRuntime == nil {
 		mutex.Lock()
 		if globalRuntime == nil {
-			globalRuntime = &runtime{threads: 25}
+			rt.GOMAXPROCS(rt.NumCPU())
+			globalRuntime = &runtime{threads: 10}
 		}
 		mutex.Unlock()
 	}
