@@ -144,5 +144,4 @@ func (r *runtime) Stop() {
 		r.statusMap = nil
 		r.active = false
 	}
-
 }
