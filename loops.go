@@ -4,8 +4,8 @@ const (
 	_BatchSize = 10000
 )
 
-// ForEach mimics a parallel foreach construct
-func ForEach(f func(i int) bool, iterations int) {
+// Foreach mimics a parallel foreach construct
+func Foreach(f func(i int) bool, iterations int) {
 	rt := GetRuntime()
 	rt.Start()
 
