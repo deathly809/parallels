@@ -16,7 +16,7 @@ import (
 func wrapper(length int, f func(int, int, *sync.Mutex) parallels.Job) []parallels.Job {
 
 	_maxThreads := 16
-	_min := _MinWorkPerThread
+	_min := parallels.MinWorkPerThread
 
 	threads := (length + _min - 1) / _min
 
@@ -64,9 +64,9 @@ func DotFloat32(a, b []float32) float32 {
 			a = a[tLen:]
 			b = b[tLen:]
 
-			theJob := &job{
-				name: fmt.Sprint("Dot Product of float32", i),
-				theFunc: func(pos int) bool {
+			theJob := &parallels.IterableJob{
+				Name: fmt.Sprint("Dot Product of float32", i),
+				TheFunc: func(pos int) bool {
 					res := false
 					r := float32(0.0)
 					pos = pos * _min
@@ -90,7 +90,7 @@ func DotFloat32(a, b []float32) float32 {
 			}
 			return theJob
 		}
-		run(wrapper(length, f))
+		parallels.Run(wrapper(length, f))
 	} else {
 		panic(fmt.Sprint("Invalid parameters:", a, b))
 	}
@@ -116,9 +116,9 @@ func DotFloat64(a, b []float64) float64 {
 			a = a[tLen:]
 			b = b[tLen:]
 
-			theJob := &job{
-				name: fmt.Sprint("Dot Product of float32", i),
-				theFunc: func(pos int) bool {
+			theJob := &parallels.IterableJob{
+				Name: fmt.Sprint("Dot Product of float32", i),
+				TheFunc: func(pos int) bool {
 					res := false
 					r := float64(0.0)
 					pos = pos * _min
@@ -142,7 +142,7 @@ func DotFloat64(a, b []float64) float64 {
 			}
 			return theJob
 		}
-		run(wrapper(length, f))
+		parallels.Run(wrapper(length, f))
 	}
 	return result
 }
@@ -166,9 +166,9 @@ func DotInt(a, b []int) int {
 			a = a[tLen:]
 			b = b[tLen:]
 
-			theJob := &job{
-				name: fmt.Sprint("Dot Product of float32", i),
-				theFunc: func(pos int) bool {
+			theJob := &parallels.IterableJob{
+				Name: fmt.Sprint("Dot Product of float32", i),
+				TheFunc: func(pos int) bool {
 					res := false
 					r := int(0.0)
 					pos = pos * _min
@@ -192,7 +192,7 @@ func DotInt(a, b []int) int {
 			}
 			return theJob
 		}
-		run(wrapper(length, f))
+		parallels.Run(wrapper(length, f))
 	}
 	return result
 }
@@ -216,9 +216,9 @@ func DotInt32(a, b []int32) int32 {
 			a = a[tLen:]
 			b = b[tLen:]
 
-			theJob := &job{
-				name: fmt.Sprint("Dot Product of float32", i),
-				theFunc: func(pos int) bool {
+			theJob := &parallels.IterableJob{
+				Name: fmt.Sprint("Dot Product of float32", i),
+				TheFunc: func(pos int) bool {
 					res := false
 					r := int64(0)
 					pos = pos * _min
@@ -242,7 +242,7 @@ func DotInt32(a, b []int32) int32 {
 			}
 			return theJob
 		}
-		run(wrapper(length, f))
+		parallels.Run(wrapper(length, f))
 	}
 	return int32(result)
 }
@@ -265,9 +265,9 @@ func DotInt64(a, b []int64) int64 {
 			a = a[tLen:]
 			b = b[tLen:]
 
-			theJob := &job{
-				name: fmt.Sprint("Dot Product of float32", i),
-				theFunc: func(pos int) bool {
+			theJob := &parallels.IterableJob{
+				Name: fmt.Sprint("Dot Product of float32", i),
+				TheFunc: func(pos int) bool {
 					res := false
 					r := int64(0.0)
 					pos = pos * _min
@@ -291,7 +291,7 @@ func DotInt64(a, b []int64) int64 {
 			}
 			return theJob
 		}
-		run(wrapper(length, f))
+		parallels.Run(wrapper(length, f))
 	}
 	return result
 }

@@ -31,14 +31,14 @@ func (t *thread) Run() {
 		if job != nil {
 
 			rt.mutex.Lock()
-			status := rt.statusMap[job.ID()]
+			status := rt.statusMap[job.GetID()]
 			rt.mutex.Unlock()
 
 			/* Start the job if new */
 			if status == Enqueued {
 				status = Running
 				rt.mutex.Lock()
-				rt.statusMap[job.ID()] = status
+				rt.statusMap[job.GetID()] = status
 				rt.mutex.Unlock()
 			}
 
@@ -50,7 +50,7 @@ func (t *thread) Run() {
 					rt.mutex.Unlock()
 				} else {
 					rt.mutex.Lock()
-					rt.statusMap[job.ID()] = Completed
+					rt.statusMap[job.GetID()] = Completed
 					rt.mutex.Unlock()
 				}
 			}

@@ -7,9 +7,9 @@ import (
 
 // Job which you want to run in parallel
 type Job interface {
-	Name() string
+	GetName() string
 	Next() bool
-	ID() int
+	GetID() int
 	SetID(int)
 }
 

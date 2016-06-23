@@ -12,13 +12,13 @@ func Foreach(f func(i int) bool, iterations int) {
 	jobs := []Job(nil)
 
 	for i := 0; i < iterations; i += _BatchSize {
-		theJob := &job{
-			id:      i,
-			name:    "Foreach",
-			pos:     i,
-			theFunc: f,
+		theJob := &IterableJob{
+			ID:      i,
+			Name:    "Foreach",
+			Pos:     i,
+			TheFunc: f,
 		}
 		jobs = append(jobs, theJob)
 	}
-	run(jobs)
+	Run(jobs)
 }

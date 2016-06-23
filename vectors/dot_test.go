@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/deathly809/gomath"
+	"github.com/deathly809/parallels"
 )
 
 const (
@@ -156,27 +157,27 @@ func performOp(b *testing.B) {
 }
 
 func BenchmarkDotFloat32WorkPerThread1000(b *testing.B) {
-	_MinWorkPerThread = 1000
+	parallels.MinWorkPerThread = 1000
 	performOp(b)
 }
 
 func BenchmarkDotFloat32WorkPerThread10000(b *testing.B) {
-	_MinWorkPerThread = 10000
+	parallels.MinWorkPerThread = 10000
 	performOp(b)
 }
 
 func BenchmarkDotFloat32WorkPerThread100000(b *testing.B) {
-	_MinWorkPerThread = 100000
+	parallels.MinWorkPerThread = 100000
 	performOp(b)
 }
 
 func BenchmarkDotFloat32WorkPerThread1000000(b *testing.B) {
-	_MinWorkPerThread = 1000000
+	parallels.MinWorkPerThread = 1000000
 	performOp(b)
 }
 
 func BenchmarkDotFloat32WorkPerThread10000000(b *testing.B) {
-	_MinWorkPerThread = 10000000
+	parallels.MinWorkPerThread = 10000000
 	performOp(b)
 }
 
@@ -187,7 +188,7 @@ func BenchmarkDotFloat32WorkPerThread100000000(b *testing.B) {
 	}
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
-	_MinWorkPerThread = 100000000
+	parallels.MinWorkPerThread = 100000000
 	performOp(b)
 }
 

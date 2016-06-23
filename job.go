@@ -6,39 +6,40 @@ import (
 )
 
 var (
-	_MinWorkPerThread = 16 * 1024
+	MinWorkPerThread = 16 * 1024
 )
 
-type job struct {
-	id      int
-	name    string
-	pos     int
-	theFunc func(int) bool
+type IterableJob struct {
+	ID      int
+	Name    string
+	Pos     int
+	TheFunc func(int) bool
 	lock    sync.Mutex
 }
 
-func (j *job) ID() int {
-	return j.id
+func (j *IterableJob) GetID() int {
+	return j.ID
 }
 
-func (j *job) SetID(id int) {
-	j.id = id
+func (j *IterableJob) SetID(id int) {
+	j.ID = id
 }
 
-func (j *job) Name() string {
-	return j.name
+func (j *IterableJob) GetName() string {
+	return j.Name
 }
 
-func (j *job) Next() bool {
+func (j *IterableJob) Next() bool {
 	j.lock.Lock()
-	curr := j.pos
-	j.pos++
+	curr := j.Pos
+	j.Pos++
 	j.lock.Unlock()
-	return j.theFunc(curr)
+	return j.TheFunc(curr)
 }
 
-func run(theJobs []parallels.Job) {
-	rt := parallels.GetRuntime()
+// Run takes in an array of jobs and executes them
+func Run(theJobs []Job) {
+	rt := GetRuntime()
 	rt.Start()
 	for i := range theJobs {
 		rt.StartJob(theJobs[i])
@@ -47,7 +48,7 @@ func run(theJobs []parallels.Job) {
 	for i := range theJobs {
 		// Sleep between waiting
 		mult := time.Duration(5)
-		for rt.JobStatus(theJobs[i].ID()) != parallels.Completed {
+		for rt.JobStatus(theJobs[i].GetID()) != Completed {
 			time.Sleep(mult * time.Millisecond)
 			if mult < 100 {
 				mult += 5
