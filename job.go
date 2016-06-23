@@ -3,8 +3,6 @@ package parallels
 import (
 	"sync"
 	"time"
-
-	"github.com/deathly809/parallels"
 )
 
 var (
