@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	NRR = 400000000
+	NRR = 40000000
 )
 
 var (
@@ -98,12 +98,12 @@ func TestDotInt32WithSameLength(t *testing.T) {
 	N := 1000 + rand.Intn(1000000)
 	a := make([]int32, N)
 	b := make([]int32, N)
-	Expected := int32(0)
+	Expected := int64(0)
 	for i := range a {
 		a[i] = rand.Int31n(1000)
 		b[i] = rand.Int31n(1000)
 
-		Expected += int32(a[i] * b[i])
+		Expected += int64(a[i]) * int64(b[i])
 	}
 
 	computed := DotInt32(a, b)
@@ -129,7 +129,7 @@ func TestDotInt32WithDiffLength(t *testing.T) {
 		}
 
 		if i < N && i < M {
-			expected64 += int64(a[i] * b[i])
+			expected64 += int64(a[i]) * int64(b[i])
 		}
 	}
 

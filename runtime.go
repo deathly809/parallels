@@ -1,7 +1,6 @@
 package parallels
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -36,8 +35,8 @@ func (t *thread) Run() {
 
 			/* Start the job if new */
 			if status == Enqueued {
-				status = Running
 				rt.mutex.Lock()
+				status = Running
 				rt.statusMap[job.GetID()] = status
 				rt.mutex.Unlock()
 			}
@@ -55,9 +54,8 @@ func (t *thread) Run() {
 				}
 			}
 		}
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(5 * time.Millisecond)
 	}
-	fmt.Println("Done?")
 }
 
 type runtime struct {

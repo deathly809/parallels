@@ -12,28 +12,65 @@ import (
 	"github.com/deathly809/parallels"
 )
 
-// This function constructs the appropriate number of jobs to execute.
-func wrapper(length int, f func(int, int, *sync.Mutex) parallels.Job) []parallels.Job {
+func generateFunction(thunk DotThunk, start, end int, mutex *sync.Mutex) func(int) bool {
+	hasMore := true
+	return func(i int) bool {
+		if hasMore {
+			thunk.Dot(start, end)
+			hasMore = false
+			mutex.Lock()
+			defer mutex.Unlock()
+			thunk.Save()
+		}
+		return hasMore
+	}
+}
 
+func generateAndRun(thunkFunc func() DotThunk, length int) {
 	_maxThreads := 16
-	_min := parallels.MinWorkPerThread
+	_minWork := parallels.MinWorkPerThread
 
-	threads := (length + _min - 1) / _min
-
+	threads := (length + _minWork - 1) / _minWork
 	if threads > _maxThreads {
 		threads = _maxThreads
-		_min = (length + threads - 1) / threads
+		_minWork = (length + threads - 1) / threads
 	}
 
 	var lock sync.Mutex
-
 	theJobs := []parallels.Job(nil)
 
-	for i := 0; i < threads; i++ {
-		theJobs = append(theJobs, f(i, _min, &lock))
+	for threadID := 0; threadID < threads; threadID++ {
+		myFunc := func(threadID, start, end int, mutex *sync.Mutex) parallels.Job {
+			f := generateFunction(thunkFunc(), start, end, mutex)
+			return parallels.CreateIterableJob(fmt.Sprint("Dot Product ", threadID, end), f, 0)
+		}
+		start := threadID * _minWork
+		end := gomath.MinInt(start+_minWork, length)
+		theJobs = append(theJobs, myFunc(threadID, start, end, &lock))
 	}
+	parallels.Run(theJobs)
+}
 
-	return theJobs
+// DotThunk encapsulates common operations among all dot products
+//
+//	Save	-	When a thread has reached the end of its exection it calls Save
+//	Dot		-	On each iteration we call Dot
+//
+//
+type DotThunk struct {
+	Save  func()
+	Dot   func(int, int)
+	Print func(int)
+}
+
+// Dot is a generic dot product function.
+//
+//		We assume that the thunkGen generates a new
+//		thunk for each thread to use.  The length is
+//		how long the array is
+//
+func Dot(thunkGen func() DotThunk, length int) {
+	generateAndRun(thunkGen, length)
 }
 
 // DotFloat32 performs a dot product on two arrays of float32
@@ -49,48 +86,29 @@ func DotFloat32(a, b []float32) float32 {
 	result := float32(0.0)
 
 	if a != nil && b != nil {
-
 		length := gomath.MinInt(len(a), len(b))
 
 		a = a[:length]
 		b = b[:length]
 
-		f := func(i, _min int, lock *sync.Mutex) parallels.Job {
-			tLen := gomath.MinInt(_min, len(a))
-
-			aData := a[:tLen]
-			bData := b[:tLen]
-
-			a = a[tLen:]
-			b = b[tLen:]
-
-			theJob := &parallels.IterableJob{
-				Name: fmt.Sprint("Dot Product of float32", i),
-				TheFunc: func(pos int) bool {
-					res := false
-					r := float32(0.0)
-					pos = pos * _min
-
-					if pos < tLen {
-						aArr := aData[pos:]
-						bArr := bData[pos:]
-						l := gomath.MinInt(_min, tLen-pos)
-						if l > 0 {
-							for i := 0; i < l; i++ {
-								r += aArr[i] * bArr[i]
-							}
-							lock.Lock()
-							result += r
-							lock.Unlock()
-							res = true
-						}
+		thunk := func() DotThunk {
+			localResult := float32(0)
+			return DotThunk{
+				Save: func() {
+					result += localResult
+				},
+				Dot: func(start, end int) {
+					for start < end {
+						localResult += a[start] * b[start]
+						start++
 					}
-					return res
+				},
+				Print: func(i int) {
+					log.Println(i, ": ", localResult)
 				},
 			}
-			return theJob
 		}
-		parallels.Run(wrapper(length, f))
+		generateAndRun(thunk, length)
 	} else {
 		panic(fmt.Sprint("Invalid parameters:", a, b))
 	}
@@ -107,42 +125,24 @@ func DotFloat64(a, b []float64) float64 {
 		a = a[:length]
 		b = b[:length]
 
-		f := func(i, _min int, lock *sync.Mutex) parallels.Job {
-			tLen := gomath.MinInt(_min, len(a))
-
-			aData := a[:tLen]
-			bData := b[:tLen]
-
-			a = a[tLen:]
-			b = b[tLen:]
-
-			theJob := &parallels.IterableJob{
-				Name: fmt.Sprint("Dot Product of float32", i),
-				TheFunc: func(pos int) bool {
-					res := false
-					r := float64(0.0)
-					pos = pos * _min
-
-					if pos < tLen {
-						aArr := aData[pos:]
-						bArr := bData[pos:]
-						l := gomath.MinInt(_min, tLen-pos)
-						if l > 0 {
-							for i := 0; i < l; i++ {
-								r += aArr[i] * bArr[i]
-							}
-							lock.Lock()
-							result += r
-							lock.Unlock()
-							res = true
-						}
+		thunk := func() DotThunk {
+			localResult := float64(0)
+			return DotThunk{
+				Save: func() {
+					result += localResult
+				},
+				Dot: func(start, end int) {
+					for start < end {
+						localResult += a[start] * b[start]
+						start++
 					}
-					return res
+				},
+				Print: func(i int) {
+					log.Println(i, ": ", localResult)
 				},
 			}
-			return theJob
 		}
-		parallels.Run(wrapper(length, f))
+		generateAndRun(thunk, length)
 	}
 	return result
 }
@@ -157,42 +157,24 @@ func DotInt(a, b []int) int {
 		a = a[:length]
 		b = b[:length]
 
-		f := func(i, _min int, lock *sync.Mutex) parallels.Job {
-			tLen := gomath.MinInt(_min, len(a))
-
-			aData := a[:tLen]
-			bData := b[:tLen]
-
-			a = a[tLen:]
-			b = b[tLen:]
-
-			theJob := &parallels.IterableJob{
-				Name: fmt.Sprint("Dot Product of float32", i),
-				TheFunc: func(pos int) bool {
-					res := false
-					r := int(0.0)
-					pos = pos * _min
-
-					if pos < tLen {
-						aArr := aData[pos:]
-						bArr := bData[pos:]
-						l := gomath.MinInt(_min, tLen-pos)
-						if l > 0 {
-							for i := 0; i < l; i++ {
-								r += aArr[i] * bArr[i]
-							}
-							lock.Lock()
-							result += r
-							lock.Unlock()
-							res = true
-						}
+		thunk := func() DotThunk {
+			localResult := 0
+			return DotThunk{
+				Save: func() {
+					result += localResult
+				},
+				Dot: func(start, end int) {
+					for start < end {
+						localResult += a[start] * b[start]
+						start++
 					}
-					return res
+				},
+				Print: func(i int) {
+					log.Println(i, ": ", localResult)
 				},
 			}
-			return theJob
 		}
-		parallels.Run(wrapper(length, f))
+		generateAndRun(thunk, length)
 	}
 	return result
 }
@@ -207,42 +189,24 @@ func DotInt32(a, b []int32) int32 {
 		a = a[:length]
 		b = b[:length]
 
-		f := func(i, _min int, lock *sync.Mutex) parallels.Job {
-			tLen := gomath.MinInt(_min, len(a))
-
-			aData := a[:tLen]
-			bData := b[:tLen]
-
-			a = a[tLen:]
-			b = b[tLen:]
-
-			theJob := &parallels.IterableJob{
-				Name: fmt.Sprint("Dot Product of float32", i),
-				TheFunc: func(pos int) bool {
-					res := false
-					r := int64(0)
-					pos = pos * _min
-
-					if pos < tLen {
-						aArr := aData[pos:]
-						bArr := bData[pos:]
-						l := gomath.MinInt(_min, tLen-pos)
-						if l > 0 {
-							for i := 0; i < l; i++ {
-								r += int64(aArr[i] * bArr[i])
-							}
-							lock.Lock()
-							result += r
-							lock.Unlock()
-							res = true
-						}
+		thunk := func() DotThunk {
+			localResult := int64(0)
+			return DotThunk{
+				Save: func() {
+					result += localResult
+				},
+				Dot: func(start, end int) {
+					for start < end {
+						localResult += int64(a[start]) * int64(b[start])
+						start++
 					}
-					return res
+				},
+				Print: func(i int) {
+					log.Println(i, ": ", localResult)
 				},
 			}
-			return theJob
 		}
-		parallels.Run(wrapper(length, f))
+		generateAndRun(thunk, length)
 	}
 	return int32(result)
 }
@@ -256,42 +220,24 @@ func DotInt64(a, b []int64) int64 {
 		a = a[:length]
 		b = b[:length]
 
-		f := func(i, _min int, lock *sync.Mutex) parallels.Job {
-			tLen := gomath.MinInt(_min, len(a))
-
-			aData := a[:tLen]
-			bData := b[:tLen]
-
-			a = a[tLen:]
-			b = b[tLen:]
-
-			theJob := &parallels.IterableJob{
-				Name: fmt.Sprint("Dot Product of float32", i),
-				TheFunc: func(pos int) bool {
-					res := false
-					r := int64(0.0)
-					pos = pos * _min
-
-					if pos < tLen {
-						aArr := aData[pos:]
-						bArr := bData[pos:]
-						l := gomath.MinInt(_min, tLen-pos)
-						if l > 0 {
-							for i := 0; i < l; i++ {
-								r += aArr[i] * bArr[i]
-							}
-							lock.Lock()
-							result += r
-							lock.Unlock()
-							res = true
-						}
+		thunk := func() DotThunk {
+			localResult := int64(0)
+			return DotThunk{
+				Save: func() {
+					result += localResult
+				},
+				Dot: func(start, end int) {
+					for start < end {
+						localResult += a[start] * b[start]
+						start++
 					}
-					return res
+				},
+				Print: func(i int) {
+					log.Println(i, ": ", localResult)
 				},
 			}
-			return theJob
 		}
-		parallels.Run(wrapper(length, f))
+		generateAndRun(thunk, length)
 	}
 	return result
 }
