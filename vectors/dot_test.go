@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	NRR = 40000000
+	NRR = 200000000
 )
 
 var (
@@ -29,8 +29,14 @@ const (
 	LowFloat32  = float32(1E-4)
 	HighFloat32 = float32(1E6)
 
+	LowFloat64  = float64(1E-40)
+	HighFloat64 = float64(1.0E60)
+
 	LowInt32  = -100000
 	HighInt32 = 100000
+
+	LowInt64  = -1000000000
+	HighInt64 = 1000000000
 )
 
 func genFloat32Array(n int, min, max float32) []float32 {
@@ -41,13 +47,31 @@ func genFloat32Array(n int, min, max float32) []float32 {
 	return A
 }
 
-func genInt32Array(n int, min, max float32) []float32 {
-	A := make([]float32, n)
+func genInt32Array(n int, min, max int32) []int32 {
+	A := make([]int32, n)
 	for i := 0; i < n; i++ {
-		A[i] = gomath.ScaleFloat32(min, max, 0, 1.0, rand.Float32())
+		A[i] = gomath.ScaleInt32(min, max, 0, 1, rand.Int31())
 	}
 	return A
 }
+
+func genFloat64Array(n int, min, max float64) []float64 {
+	A := make([]float64, n)
+	for i := 0; i < n; i++ {
+		A[i] = gomath.ScaleFloat64(min, max, 0, 1.0, rand.Float64())
+	}
+	return A
+}
+
+func genInt64Array(n int, min, max int64) []int64 {
+	A := make([]int64, n)
+	for i := 0; i < n; i++ {
+		A[i] = gomath.ScaleInt64(min, max, 0, 1, rand.Int63())
+	}
+	return A
+}
+
+// Float32
 
 func TestDotFloat32WithSameLength(t *testing.T) {
 	N := 500000
@@ -93,6 +117,55 @@ func TestDotFloat32WithDiffLength(t *testing.T) {
 		t.FailNow()
 	}
 }
+
+// Float64
+
+func TestDotFloat64WithSameLength(t *testing.T) {
+	N := 500000
+
+	a := genFloat64Array(N, LowFloat64, HighFloat64)
+	b := genFloat64Array(N, LowFloat64, HighFloat64)
+
+	Expected := 0.0
+	for i := range a {
+		Expected += a[i] * b[i]
+	}
+
+	computed := DotFloat64(a, b)
+
+	if gomath.AbsFloat64(computed-Expected) < LowFloat64 {
+		t.Logf("Expected %f but computed %f\n", Expected, computed)
+		t.FailNow()
+	}
+
+}
+
+func TestDotFloat64WithDiffLength(t *testing.T) {
+	N := 1000 + rand.Intn(1000000)
+	M := 1000 + rand.Intn(1000000)
+	if N == M {
+		N++
+	}
+	a := genFloat64Array(N, LowFloat64, HighFloat64)
+	b := genFloat64Array(M, LowFloat64, HighFloat64)
+	Expected := 0.0
+	for i := range a {
+		if i < N && i < M {
+			Expected += a[i] * b[i]
+		} else {
+			break
+		}
+	}
+
+	computed := DotFloat64(a, b)
+
+	if gomath.AbsFloat64(computed-Expected) < LowFloat64 {
+		t.Logf("Expected %f but computed %f\n", Expected, computed)
+		t.FailNow()
+	}
+}
+
+// Int32
 
 func TestDotInt32WithSameLength(t *testing.T) {
 	N := 1000 + rand.Intn(1000000)
@@ -142,6 +215,55 @@ func TestDotInt32WithDiffLength(t *testing.T) {
 	}
 }
 
+// Int64
+
+func TestDotInt64WithSameLength(t *testing.T) {
+	N := 1000 + rand.Intn(1000000)
+	a := make([]int64, N)
+	b := make([]int64, N)
+	Expected := int64(0)
+	for i := range a {
+		a[i] = rand.Int63n(1000)
+		b[i] = rand.Int63n(1000)
+
+		Expected += int64(a[i]) * int64(b[i])
+	}
+
+	computed := DotInt64(a, b)
+
+	if computed != Expected {
+		t.Logf("Expected %d but computed %d\n", Expected, computed)
+		t.FailNow()
+	}
+}
+
+func TestDotInt64WithDiffLength(t *testing.T) {
+	N := 1000 + rand.Intn(1000000)
+	M := 1000 + rand.Intn(1000000)
+	a := make([]int64, N)
+	b := make([]int64, M)
+	Expected := int64(0)
+	for i := range a {
+		if i < N {
+			a[i] = gomath.ScaleInt64(LowInt64, HighInt64, 0, HighInt64, rand.Int63n(HighInt64))
+		}
+		if i < M {
+			b[i] = gomath.ScaleInt64(LowInt64, HighInt64, 0, HighInt64, rand.Int63n(HighInt64))
+		}
+
+		if i < N && i < M {
+			Expected += a[i] * b[i]
+		}
+	}
+
+	Computed := DotInt64(a, b)
+
+	if Computed != Expected {
+		t.Logf("Expected %d but computed %d\n", Expected, Computed)
+		t.FailNow()
+	}
+}
+
 func performOp(b *testing.B) {
 	if ARR == nil {
 		initBenchmark()
@@ -154,6 +276,11 @@ func performOp(b *testing.B) {
 		}
 	}
 
+}
+
+func BenchmarkDotFloat32WorkPerThread100(b *testing.B) {
+	parallels.MinWorkPerThread = 100
+	performOp(b)
 }
 
 func BenchmarkDotFloat32WorkPerThread1000(b *testing.B) {
