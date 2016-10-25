@@ -2,10 +2,6 @@ package parallels
 
 import "github.com/deathly809/gomath"
 
-const (
-	_BatchSize = 10000
-)
-
 // Foreach mimics a parallel foreach construct
 //
 //      This code should be equivalent to the serial code:

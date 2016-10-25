@@ -5,6 +5,19 @@ import (
 	"sync"
 )
 
+var (
+	_BatchSize = 10000
+)
+
+// BatchSize returns the batchsize
+func BatchSize(newBatchSize int) int {
+	res := _BatchSize
+	if newBatchSize > 0 {
+		_BatchSize = newBatchSize
+	}
+	return res
+}
+
 // Job which you want to run in parallel
 type Job interface {
 	GetName() string
